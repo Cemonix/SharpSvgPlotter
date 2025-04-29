@@ -28,8 +28,8 @@ public class ScaleTransform
         ArgumentNullException.ThrowIfNull(xAxis);
         ArgumentNullException.ThrowIfNull(yAxis);
 
-        double dataWidth = xAxis.Range;
-        double dataHeight = yAxis.Range;
+        double dataWidth = xAxis.Max - xAxis.Min;
+        double dataHeight = yAxis.Max - yAxis.Min;
 
         // --- Handle potential zero ranges ---
         if (Math.Abs(dataWidth) < Constants.Epsilon)
