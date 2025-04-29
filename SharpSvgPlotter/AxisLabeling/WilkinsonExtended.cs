@@ -1,10 +1,11 @@
 using System;
-using System.Reflection.Metadata;
+using SharpSvgPlotter.Utils;
 
 namespace SharpSvgPlotter.AxisLabeling;
 
 // TODO: Not finished - probably overkill for first versions of the library
 // Paper - An Extension of Wilkinson’s Algorithm for Positioning Tick Labels on Axes
+// https://rdrr.io/cran/labeling/src/R/labeling.R
 public class WilkinsonExtended
 {
     private static readonly float[] Q = [1, 5, 2, 2.5f, 4, 3];
@@ -13,65 +14,67 @@ public class WilkinsonExtended
     public static TickLabelingResult? GenerateLabels(
         double rangeMin, double rangeMax, double ro_t, int max_iterations
     ) {
-        TickLabelingResult? result = null;
-        double best_score = -2;
+        throw new NotImplementedException("GenerateLabels not implemented.");
 
-        for (int j = 1; ; j++) {
-            foreach (double q in Q) {
-                double sim_max = SimplicityMax(q, j);
-                if ((w[0] * sim_max) + (w[1] * 1) + (w[2] * 1) + (w[3] * 1) < best_score)
-                    break;
+        // TickLabelingResult? result = null;
+        // double best_score = -2;
 
-                int k = 2;
-                while (true) {
-                    double den_max = DensityMax(k);
-                    if ((w[0] * sim_max) + (w[1] * 1) + (w[2] * den_max) + (w[3] * 1) < best_score)
-                        break;
+        // for (int j = 1; ; j++) {
+        //     foreach (double q in Q) {
+        //         double sim_max = SimplicityMax(q, j);
+        //         if ((w[0] * sim_max) + (w[1] * 1) + (w[2] * 1) + (w[3] * 1) < best_score)
+        //             break;
 
-                    double delta = (rangeMax - rangeMin) / (k + 1) / (j * q);
-                    if (delta <= 0) continue; // Avoid log of non-positive
+        //         int k = 2;
+        //         while (true) {
+        //             double den_max = DensityMax(k);
+        //             if ((w[0] * sim_max) + (w[1] * 1) + (w[2] * den_max) + (w[3] * 1) < best_score)
+        //                 break;
 
-                    for (double z = Math.Floor(Math.Log10(delta)); ; z++) {
-                        double l_step = q * j * Math.Pow(10, z);
-                        if (l_step <= 0) continue; // Safety check
+        //             double delta = (rangeMax - rangeMin) / (k + 1) / (j * q);
+        //             if (delta <= 0) continue; // Avoid log of non-positive
 
-                        double cov_max = CoverageMax(rangeMin, rangeMax, k - 1, l_step);
-                        if ((w[0] * sim_max) + (w[1] * cov_max) + (w[2] * den_max) + (w[3] * 1) < best_score)
-                            break;
+        //             for (double z = Math.Floor(Math.Log10(delta)); ; z++) {
+        //                 double l_step = q * j * Math.Pow(10, z);
+        //                 if (l_step <= 0) continue; // Safety check
 
-                        double from = Math.Floor(rangeMax / l_step) - (k - 1);
-                        double to = Math.Ceiling(rangeMin / l_step);
-                        double step = 1 / j;
-                        IEnumerable<double> series = Range.GetRange(from, to, step);
-                        foreach (double start in series) {
-                            double l_min = start * l_step;
-                            double l_max = l_min + (k - 1) * l_step;
-                            double sim = Simplicity(q, j, l_min, l_max, l_step);
-                            double den = Density(l_min, l_max, l_step);
-                            double cov = Coverage(l_min, l_max, l_step);
+        //                 double cov_max = CoverageMax(rangeMin, rangeMax, k - 1, l_step);
+        //                 if ((w[0] * sim_max) + (w[1] * cov_max) + (w[2] * den_max) + (w[3] * 1) < best_score)
+        //                     break;
 
-                            if ((w[0] * sim) + (w[1] * cov) + (w[2] * den) + (w[3] * 1) < best_score)
-                                continue;
+        //                 double from = Math.Floor(rangeMax / l_step) - (k - 1);
+        //                 double to = Math.Ceiling(rangeMin / l_step);
+        //                 double step = 1 / j;
+        //                 IEnumerable<double> series = Range.GetRange(from, to, step);
+        //                 foreach (double start in series) {
+        //                     double l_min = start * l_step;
+        //                     double l_max = l_min + (k - 1) * l_step;
+        //                     double sim = Simplicity(q, j, l_min, l_max, l_step);
+        //                     double den = Density(l_min, l_max, l_step);
+        //                     double cov = Coverage(l_min, l_max, l_step);
+
+        //                     if ((w[0] * sim) + (w[1] * cov) + (w[2] * den) + (w[3] * 1) < best_score)
+        //                         continue;
                             
-                            (l, l_format) = OptLegibility(l_min, l_max, l_step);
+        //                     (l, l_format) = OptLegibility(l_min, l_max, l_step);
 
-                            double score = (w[0] * sim) + (w[1] * cov) + (w[2] * den) + (w[3] * l);
-                            if (score > best_score) {
-                                best_score = score;
-                                result = Label(l_min, l_max, l_step, l_format);
-                            }
-                        }
-                    }
+        //                     double score = (w[0] * sim) + (w[1] * cov) + (w[2] * den) + (w[3] * l);
+        //                     if (score > best_score) {
+        //                         best_score = score;
+        //                         result = Label(l_min, l_max, l_step, l_format);
+        //                     }
+        //                 }
+        //             }
 
-                    k++;
-                }
-            }
+        //             k++;
+        //         }
+        //     }
 
-            if (j > max_iterations)
-                break;
-        }
+        //     if (j > max_iterations)
+        //         break;
+        // }
 
-        return result;
+        // return result;
     }
 
     /// <summary>
