@@ -1,4 +1,5 @@
 ﻿using SharpSvgPlotter;
+using SharpSvgPlotter.AxisLabeling;
 using SharpSvgPlotter.Primitives;
 
 var xData = new List<double> { 1, 2, 3, 4, 5 };
@@ -7,6 +8,7 @@ var dataPoints = xData.Zip(yData, (x, y) => new DataPoint(x, y)).ToList();
 
 var plot = new Plot(800, 600, new PlotMargins(50, 50, 50, 50));
 plot.SetTitle("Sample Plot");
+plot.SetAlgorithm(new MatplotlibAlgorithm());
 plot.SetXAxis("X Axis");
 plot.SetYAxis("Y Axis");
 
