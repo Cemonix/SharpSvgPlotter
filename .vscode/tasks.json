@@ -1,0 +1,46 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/SharpSvgPlotter.sln"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "build library",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/SharpSvgPlotter/SharpSvgPlotter.csproj"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "build demo",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/SharpSvgPlotter.Demo/SharpSvgPlotter.Demo.csproj"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "build test",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "--project",
+                "${workspaceFolder}/SharpSvgPlotter.Test/SharpSvgPlotter.Test.csproj"
+            ],
+            "problemMatcher": "$msCompile"
+        }
+    ]
+}
