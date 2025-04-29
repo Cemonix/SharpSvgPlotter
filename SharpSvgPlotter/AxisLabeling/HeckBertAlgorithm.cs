@@ -27,7 +27,7 @@ public class HeckBertAlgorithm : AxisLabelingAlgorithm
 
         string formatString = options?.FormatString ?? "G3"; // Default format string
 
-        int m = options?.DesiredTickCount ?? 5; // Default to 5 ticks if not specified
+        int m = options?.TickCount ?? 5; // Default to 5 ticks if not specified
         if (m < 2) m = 2; // Need at least 2 ticks for a step
         int intervals = m - 1;
 

@@ -17,7 +17,7 @@ public sealed class HeckBertAlgorithmTest
         double axisLength = 500; // Axis length isn't directly used by Heckbert's core calc
         var options = new AxisLabelingOptions
         {
-            DesiredTickCount = 4, // Requesting 4 ticks
+            TickCount = 4, // Requesting 4 ticks
             FormatString = "G"    // Use "G" for general number format (like "5", "10")
         };
 
@@ -59,7 +59,7 @@ public sealed class HeckBertAlgorithmTest
         double dataMin = 5.0;
         double dataMax = 5.0;
         double axisLength = 100;
-        var options = new AxisLabelingOptions { DesiredTickCount = 5, FormatString = "G" };
+        var options = new AxisLabelingOptions { TickCount = 5, FormatString = "G" };
 
         var expectedPositions = new List<double> { 5.0 };
         var expectedLabels = new List<string> { "5" };
@@ -89,7 +89,7 @@ public sealed class HeckBertAlgorithmTest
         double dataMin = -18.5;
         double dataMax = -3.2;
         double axisLength = 600;
-        var options = new AxisLabelingOptions { DesiredTickCount = 6, FormatString = "G" };
+        var options = new AxisLabelingOptions { TickCount = 6, FormatString = "G" };
 
         // Expected calculation: range = -3.2 - (-18.5) = 15.3
         // Nice range (round=false) = 20

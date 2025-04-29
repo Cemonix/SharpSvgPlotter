@@ -27,7 +27,7 @@ public class GnuPlotAlgorithm : AxisLabelingAlgorithm
 
         double range = dataMax - dataMin;
         string formatString = options?.FormatString ?? "G3"; // Default format string
-        int m = options?.DesiredTickCount ?? 5; // Default to 5 ticks
+        int m = options?.TickCount ?? 5; // Default to 5 ticks
         if (m < 2) m = 2; // Need at least 2 ticks for a step
         int ntick = m; // Gnuplot implementation uses floor, but let's stick to 'm' for consistency unless issues arise.
 
