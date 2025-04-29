@@ -1,16 +1,23 @@
 using System;
+using SharpSvgPlotter.AxisLabeling;
 using SharpSvgPlotter.Series;
 using SharpSvgPlotter.Utils;
 
 namespace SharpSvgPlotter.Components;
 
-public class Axis
-{
+public class Axis(
+    string label,
+    AxisLabelingAlgorithm labelingAlgorithm,
+    AxisLabelingOptions? labelingOptions = null,
+    bool autoScale = true
+) {
     public double Min { get; private set; }
     public double Max { get; private set; }
-    public string Label { get; set; } = string.Empty;
-    public double Range => Max - Min;
-    public bool AutoScale { get; set; } = true;
+    public string Label { get; init; } = label ?? string.Empty;
+    public bool AutoScale { get; init; } = autoScale;
+
+    public AxisLabelingAlgorithm LabelingAlgorithm { get; init; } = labelingAlgorithm ?? new HeckBertAlgorithm();
+    public AxisLabelingOptions LabelingOptions { get; init; } = labelingOptions ?? new(); // Default options
 
     public List<double> TickPositions { get; private set; } = [];
     public List<string> TickLabels { get; private set; } = [];
@@ -19,18 +26,37 @@ public class Axis
     {
         if (max < min)
             throw new ArgumentException("Max must be greater than or equal to Min.");
-        // TODO: Handle case where max == min? Maybe add tiny padding?
+        if (Math.Abs(max - min) < Constants.Epsilon)
+            throw new ArgumentException("Max and Min cannot be equal or too close to each other.");
+        if (double.IsInfinity(min) || double.IsInfinity(max))
+            throw new ArgumentException("Min and Max cannot be set to infinity.");
+        if (double.IsNaN(min) || double.IsNaN(max))
+            throw new ArgumentException("Min and Max cannot be NaN.");
+            
         Min = min;
         Max = max;
     }
 
+    /// <summary>
+    /// Calculates the range of the axis based on the provided series data.
+    /// </summary>
+    /// <param name="series">The series data to calculate the range from.</param>
+    /// <param name="axis_type">The type of axis (X or Y).</param>
+    /// <remarks>
     public void CalculateRange(IEnumerable<ISeries> series, AxisType axis_type)
     {
         if (!AutoScale)
             return;
 
         if (series == null || !series.Any())
-            throw new ArgumentException("Series collection cannot be null or empty.");
+        {
+            // Set a default range if no series data provided for autoscaling
+            SetRange(0, 1);
+            Console.Error.WriteLine(
+                $"Warning: AutoScale enabled for {axis_type}-Axis but no series data provided. Defaulting range to [0, 1]."
+            );
+            return;
+        }
 
         double min = double.MaxValue;
         double max = double.MinValue;
@@ -50,58 +76,80 @@ public class Axis
             }
         }
 
+        // Handle case where no series had valid data points
+        if (min == double.MaxValue || max == double.MinValue)
+        {
+            SetRange(0, 1);
+            Console.Error.WriteLine(
+                $"Warning: AutoScale enabled for {axis_type}-Axis but no valid data points found in series. "
+                + "Defaulting range to [0, 1]."
+            );
+            return;
+        }
+
+        // Add some padding to the range (e.g., 5%)
+        double padding = (max - min) * 0.05;
+        // Handle zero range case before padding
+        if (padding < Constants.Epsilon) {
+            padding = 1.0; // Default padding if range is zero
+            min -= padding * 0.5;
+            max += padding * 0.5;
+        } else {
+            min -= padding;
+            max += padding;
+        }
+
         SetRange(min, max);
+
+        TickPositions.Clear();
+        TickLabels.Clear();
     }
 
-    public void CalculateTicks()
+    /// <summary>
+    /// Calculates tick positions and labels using the assigned LabelingAlgorithm.
+    /// </summary>
+    /// <param name="axisLength">The physical length of the axis in the output medium (e.g., pixels).
+    /// Required by some algorithms for density calculations.</param>
+    public void CalculateTicks(double axisLength)
     {
         TickPositions.Clear();
         TickLabels.Clear();
 
-        if (Math.Abs(Range) < Constants.Epsilon) {
-            throw new RangeException($"Range is too small to calculate ticks. Range: {Range}");
+        // Ensure the range is valid before calling the algorithm
+        if (Math.Abs(Max - Min) < Constants.Epsilon)
+        {
+            // Handle zero-range axis: generate a single tick
+            double centerTick = Min;
+            TickPositions.Add(centerTick);
+            TickLabels.Add(centerTick.ToString(LabelingOptions.FormatString ?? "G3"));
+            return;
         }
 
-        // --- Replace this with a better tick calculation algorithm ---
-        // Simple Example (improvement over division, but still basic):
-        int maxTicks = 10; // Desired max number of ticks
-        double niceInterval = CalculateNiceInterval(Range, maxTicks);
-        double firstTick = Math.Ceiling(Min / niceInterval) * niceInterval;
-        double lastTick = Math.Floor(Max / niceInterval) * niceInterval;
+        // Generate ticks using the selected algorithm
+        TickCalculationResult? result = LabelingAlgorithm.GenerateTicks(Min, Max, axisLength, LabelingOptions);
 
-        for (double currentTick = firstTick; currentTick <= Max + (niceInterval * 0.5); currentTick += niceInterval)
+        if (result != null && result.TickPositions.Count > 0)
         {
-             if (currentTick >= Min - (niceInterval * 0.5)) // Check bounds loosely
-             {
-                  TickPositions.Add(currentTick);
-                  TickLabels.Add(currentTick.ToString("G3"));
-             }
+            TickPositions = result.TickPositions;
+            TickLabels = result.TickLabels;
+
+            SetRange(result.ActualMin, result.ActualMax);
         }
-        // --- End of simple example ---
-
-        // Research "nice numbers algorithm C#" or "Wilkinson extended label algorithm C#" for robust implementations.
-        throw new NotImplementedException("Robust tick calculation not implemented.");
-    }
-
-    private double CalculateNiceInterval(double range, int maxTicks)
-    {
-        double roughInterval = range / maxTicks;
-        double exponent = Math.Floor(Math.Log10(roughInterval));
-        double magnitude = Math.Pow(10, exponent);
-
-        // Try intervals of 1, 2, 5 times the magnitude
-        double[] niceMultipliers = { 1.0, 2.0, 5.0, 10.0 }; // 10 is fallback
-        double bestInterval = magnitude * 10; // Default fallback
-
-        foreach(double mult in niceMultipliers)
+        else
         {
-            double currentInterval = magnitude * mult;
-            if (range / currentInterval <= maxTicks + 1) // Check if tick count is reasonable
+            // Handle case where algorithm failed or returned no ticks (should be rare)
+            Console.Error.WriteLine(
+                $"Warning: Labeling algorithm '{LabelingAlgorithm.AlgorithmName}' failed " +
+                $"to generate ticks for range [{Min}, {Max}].");
+
+            TickPositions.Add(Min);
+            TickLabels.Add(Min.ToString(LabelingOptions.FormatString ?? "G3"));
+            if (Math.Abs(Max - Min) > Constants.Epsilon) // Avoid duplicate if Min==Max
             {
-                bestInterval = currentInterval;
-                break;
+                TickPositions.Add(Max);
+                TickLabels.Add(Max.ToString(LabelingOptions.FormatString ?? "G3"));
             }
         }
-        return bestInterval;
+
     }
 }
