@@ -31,7 +31,7 @@ public class MatplotlibAlgorithm : AxisLabelingAlgorithm
         }
 
         string formatString = options?.FormatString ?? "G3";
-        int m = options?.DesiredTickCount ?? 5;
+        int m = options?.TickCount ?? 5;
         if (m < 2) m = 2;
         int nbins = m; // Matplotlib uses 'nbins' which corresponds to desired ticks 'm'
 
