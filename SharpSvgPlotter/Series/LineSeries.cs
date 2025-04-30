@@ -1,13 +1,24 @@
 using System;
 using SharpSvgPlotter.Primitives;
+using SharpSvgPlotter.Primitives.PlotStyles;
 
 namespace SharpSvgPlotter.Series;
 
-public class LineSeries(string title, List<DataPoint> dataPoints, PlotStyle plotStyle) : ISeries
+public class LineSeries : ISeries
 {
-    public string Title { get; init; } = title;
-    public PlotStyle PlotStyle { get; init; } = plotStyle;
-    public IEnumerable<DataPoint> DataPoints { get; init; } = dataPoints ?? [];
+    public string Title { get; init; }
+    public PlotStyle PlotStyle { get; init; }
+    public IEnumerable<DataPoint> DataPoints { get; init; }
+
+    public LineSeries(string title, IEnumerable<DataPoint> dataPoints, LinePlotStyle plotStyle)
+    {
+        Title = title;
+        DataPoints = dataPoints ?? [];
+        PlotStyle = plotStyle ?? new LinePlotStyle();
+
+        if (plotStyle!.GetType() != typeof(LinePlotStyle))
+            throw new ArgumentException("plotStyle must be of type LinePlotStyle.", nameof(plotStyle));
+    }
 
     public (double minX, double maxX, double minY, double maxY) GetDataRange()
     {   
