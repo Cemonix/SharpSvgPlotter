@@ -27,7 +27,22 @@ public class Axis(
         if (max < min)
             throw new ArgumentException("Max must be greater than or equal to Min.");
         if (Math.Abs(max - min) < Constants.Epsilon)
-            throw new ArgumentException("Max and Min cannot be equal or too close to each other.");
+        {
+            double padding = Constants.Epsilon;
+            if (max == min)
+            {
+                max += padding / 2;
+                min -= padding / 2;
+            }
+            else if (max > min)
+            {
+                max += padding;
+            }
+            else
+            {
+                min -= padding;
+            }
+        }
         if (double.IsInfinity(min) || double.IsInfinity(max))
             throw new ArgumentException("Min and Max cannot be set to infinity.");
         if (double.IsNaN(min) || double.IsNaN(max))
