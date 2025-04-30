@@ -5,7 +5,7 @@ using SharpSvgPlotter.Utils;
 
 namespace SharpSvgPlotter.Components;
 
-public class ScaleTransform
+internal class ScaleTransform
 {
     private readonly double _scaleX;
     private readonly double _scaleY;
@@ -22,7 +22,7 @@ public class ScaleTransform
     /// <returns>A configured ScaleTransform instance.</returns>
     /// <exception cref="ArgumentNullException">Thrown if any of the parameters are null.</exception>
     /// <exception cref="ArgumentException">Thrown if axis ranges or plot area dimensions are zero or invalid.</exception>
-    public ScaleTransform(Axis xAxis, Axis yAxis, PlotArea plotArea)
+    internal ScaleTransform(Axis xAxis, Axis yAxis, PlotArea plotArea)
     {
         ArgumentNullException.ThrowIfNull(plotArea);
         ArgumentNullException.ThrowIfNull(xAxis);
@@ -53,7 +53,7 @@ public class ScaleTransform
     /// </summary>
     /// <param name="point">The data point to transform.</param>
     /// <returns>The transformed data point in pixel space.</returns>
-    public DataPoint Transform(DataPoint point) => new (
+    internal DataPoint Transform(DataPoint point) => new (
         point.X * _scaleX + _offsetX, point.Y * _scaleY + _offsetY
     );
 
@@ -62,7 +62,7 @@ public class ScaleTransform
     /// </summary>
     /// <param name="point">The pixel point to transform.</param>
     /// <returns>The inversely transformed data point in data space.</returns>
-    public DataPoint InverseTransform(DataPoint point)
+    internal DataPoint InverseTransform(DataPoint point)
     {
         double invScaleX = Math.Abs(_scaleX) < Constants.Epsilon ? 0 : 1.0 / _scaleX;
         double invScaleY = Math.Abs(_scaleY) < Constants.Epsilon ? 0 : 1.0 / _scaleY;

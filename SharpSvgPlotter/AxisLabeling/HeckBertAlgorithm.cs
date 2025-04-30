@@ -3,11 +3,11 @@ using SharpSvgPlotter.Utils;
 
 namespace SharpSvgPlotter.AxisLabeling;
 
-public class HeckBertAlgorithm : AxisLabelingAlgorithm
+internal class HeckBertAlgorithm : AxisLabelingAlgorithm
 {
-    public override string AlgorithmName => "HeckBert";
+    internal override string AlgorithmName => "HeckBert";
 
-    public override TickCalculationResult? GenerateTicks(
+    internal override TickCalculationResult? GenerateTicks(
         double dataMin, double dataMax, double axisLength, AxisLabelingOptions? options
     ) {
         if (dataMin > dataMax) 

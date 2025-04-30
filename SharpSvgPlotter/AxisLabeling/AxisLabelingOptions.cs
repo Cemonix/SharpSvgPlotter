@@ -5,7 +5,7 @@ namespace SharpSvgPlotter.AxisLabeling;
 /// <summary>
 /// Options to configure axis labeling algorithms.
 /// </summary>
-public class AxisLabelingOptions(
+internal class AxisLabelingOptions(
     double? density = null,
     double? fontSize = null,
     int tickCount = 5,
@@ -15,20 +15,20 @@ public class AxisLabelingOptions(
     /// Density of labels (e.g., labels per inch or per 100 pixels).
     /// Used by density-aware algorithms like Wilkinson Extended.
     /// </summary>
-    public double? Density { get; init; } = density;
+    internal double? Density { get; init; } = density;
 
     /// <summary>
     /// Font size for legibility calculations.
     /// </summary>
-    public double? FontSize { get; init; } = fontSize;
+    internal double? FontSize { get; init; } = fontSize;
 
     /// <summary>
     /// A hint for the number of ticks (used by simpler algorithms).
     /// </summary>
-    public int? TickCount { get; init; } = tickCount;
+    internal int? TickCount { get; init; } = tickCount;
 
     /// <summary>
     /// Format string for tick labels.
     /// </summary>
-    public string? FormatString { get; init; } = formatString;
+    internal string? FormatString { get; init; } = formatString;
 }

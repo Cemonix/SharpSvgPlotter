@@ -9,12 +9,12 @@ namespace SharpSvgPlotter.AxisLabeling;
 /// 
 /// The primary source for these algorithms is the implementation in the R language: https://rdrr.io/cran/labeling/src/R/labeling.R
 /// </summary>
-public abstract class AxisLabelingAlgorithm
+internal abstract class AxisLabelingAlgorithm
 {
     /// <summary>
     /// Gets the name of the labeling algorithm.
     /// </summary>
-    public abstract string AlgorithmName { get; }
+    internal abstract string AlgorithmName { get; }
 
     /// <summary>
     /// Generates tick positions and labels for a given data range and configuration.
@@ -24,7 +24,7 @@ public abstract class AxisLabelingAlgorithm
     /// <param name="axisLength">The physical length of the axis (e.g., in pixels or inches) - needed for density/legibility.</param>
     /// <param name="options">Additional options to configure the algorithm.</param>
     /// <returns>A TickCalculationResult containing the generated ticks and labels, or null if no suitable labeling is found.</returns>
-    public abstract TickCalculationResult? GenerateTicks(
+    internal abstract TickCalculationResult? GenerateTicks(
         double dataMin, double dataMax, double axisLength, AxisLabelingOptions? options
     );
 
@@ -99,7 +99,7 @@ public abstract class AxisLabelingAlgorithm
                 tickLabels.Add(tickMax.ToString(formatString));
             }
         }
-
+        
         return (tickPositions, tickLabels);
     }
 }
