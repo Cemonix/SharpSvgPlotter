@@ -10,7 +10,7 @@ using SharpSvgPlotter.Series;
 
 namespace SharpSvgPlotter.Renderer;
 
-public static class SvgPlotRenderer
+internal static class SvgPlotRenderer
 {
     // TODO: Send option object to set these values
     private const double DefaultAxisStrokeWidth = 1.0;
@@ -22,7 +22,7 @@ public static class SvgPlotRenderer
     private const double PlotTitleFontSize = 16.0;
     private static readonly XNamespace _ns = XNamespace.Get("http://www.w3.org/2000/svg");
 
-    public static string Render(Plot plot, PlotArea plotArea, ScaleTransform scale)
+    internal static string Render(Plot plot, PlotArea plotArea, ScaleTransform scale)
     {
         // --- 1. Initialization & Setup ---
         if (plot.XAxis == null || plot.YAxis == null)
@@ -183,9 +183,7 @@ public static class SvgPlotRenderer
         if (!string.IsNullOrEmpty(xAxis.Label))
         {
             double labelX = plotArea.X + plotArea.Width / 2;
-            // Position below tick labels, adjust margin division factor as needed
-            // TODO: Dangerous, label can be outside the plot bounds - need to get whole plot area with margins
-            double labelY = plotArea.Y + plotArea.Height + plotArea.Height * 0.05 + TickLabelFontSize;
+            double labelY = plotArea.Y + plotArea.Height + (plotArea.Margins.Bottom * 0.75);
             elements.Add(new XElement(_ns + "text",
                 new XAttribute("x", labelX.ToString(culture)),
                 new XAttribute("y", labelY.ToString(culture)),
@@ -254,13 +252,10 @@ public static class SvgPlotRenderer
          if (!string.IsNullOrEmpty(yAxis.Label))
          {
             // Position left of tick labels, centered vertically, adjust margin division factor
-            double labelX = plotArea.X - YAxisLabelHorizontalOffset - TickLabelFontSize; // Further left
+            double labelX = plotArea.X - (plotArea.Margins.Left / 2);
             double labelY = plotArea.Y + plotArea.Height / 2;
-            string rotateTransform = $"transform=\"rotate(-90 {labelX.ToString(culture)} {labelY.ToString(culture)})\"";
             elements.Add(new XElement(_ns + "text",
-                new XAttribute("x", labelX.ToString(culture)),
-                new XAttribute("y", labelY.ToString(culture)),
-                new XAttribute("transform", rotateTransform),
+                new XAttribute("transform", $"translate({labelX.ToString(culture)},{labelY.ToString(culture)}) rotate(-90)"),
                 new XAttribute("text-anchor", "middle"),
                 new XAttribute("font-size", AxisTitleFontSize.ToString(culture)),
                 new XAttribute("fill", "black"),
