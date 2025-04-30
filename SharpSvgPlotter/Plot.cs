@@ -94,7 +94,7 @@ public class Plot(double width, double height, PlotMargins plotMargins)
                 "Both X and Y axes must be configured using SetXAxis/SetYAxis before saving."
             );
          if (_series.Count == 0) {
-            Console.WriteLine("Warning: Saving plot with no data series added.");
+            Console.Error.WriteLine("Warning: Saving plot with no data series added.");
             return;
          }
 
