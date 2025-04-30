@@ -1,5 +1,6 @@
 using System;
 using SharpSvgPlotter.Primitives;
+using SharpSvgPlotter.Primitives.PlotStyles;
 
 namespace SharpSvgPlotter.Series;
 
