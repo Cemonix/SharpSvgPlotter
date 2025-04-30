@@ -1,6 +1,7 @@
 ﻿using SharpSvgPlotter.AxisLabeling;
 using SharpSvgPlotter.Components;
 using SharpSvgPlotter.Primitives;
+using SharpSvgPlotter.Primitives.PlotStyles;
 using SharpSvgPlotter.Renderer;
 using SharpSvgPlotter.Series;
 
@@ -27,8 +28,6 @@ public class Plot(PlotOptions options)
     /// Configures the X-axis.
     /// </summary>
     /// <param name="label">Label text for the axis.</param>
-    /// <param name="labelingAlgorithm">The algorithm used for tick generation.</param>
-    /// <param name="labelingOptions">Options for the labeling algorithm (optional).</param>
     /// <param name="autoScale">Whether the axis range should be calculated automatically (default true).</param>
     public void SetXAxis(string label, bool autoScale = true) {
         if (LabelingAlgorithm == null)
@@ -50,8 +49,6 @@ public class Plot(PlotOptions options)
     /// Configures the Y-axis.
     /// </summary>
     /// <param name="label">Label text for the axis.</param>
-    /// <param name="labelingAlgorithm">The algorithm used for tick generation.</param>
-    /// <param name="labelingOptions">Options for the labeling algorithm (optional).</param>
     /// <param name="autoScale">Whether the axis range should be calculated automatically (default true).</param>
     public void SetYAxis(string label, bool autoScale = true) {
         if (LabelingAlgorithm == null)
@@ -75,10 +72,13 @@ public class Plot(PlotOptions options)
     /// <param name="title">Series title (for legend, etc.).</param>
     /// <param name="dataPoints">The list of data points.</param>
     /// <param name="plotStyle">Styling for the series.</param>
-    public void AddLineSeries(string title, List<DataPoint> dataPoints, PlotStyle plotStyle)
+    public void AddLineSeries(string title, List<DataPoint> dataPoints, LinePlotStyle plotStyle)
     {
         if (XAxis == null || YAxis == null)
             throw new InvalidOperationException("Both X and Y axes must be set before adding a series.");
+
+        if (dataPoints == null || dataPoints.Count == 0)
+            throw new ArgumentException("Data points cannot be null or empty.", nameof(dataPoints));
 
         var series = new LineSeries(title, dataPoints, plotStyle);
         _series.Add(series);
@@ -92,10 +92,32 @@ public class Plot(PlotOptions options)
     {
         if (series == null)
             throw new ArgumentNullException(nameof(series), "Series cannot be null.");
+        if (XAxis == null || YAxis == null)
+            throw new InvalidOperationException("Both X and Y axes must be set before adding a series.");
+        _series.Add(series);
+    }
 
+    /// <summary>
+    /// Adds a ScatterSeries to the plot.
+    /// </summary>
+    /// <param name="title">Series title.</param>
+    /// <param name="dataPoints">The list of data points.</param>
+    /// <param name="plotStyle">Styling for the series markers.</param>
+    public void AddScatterSeries(string title, List<DataPoint> dataPoints, ScatterPlotStyle plotStyle)
+    {
         if (XAxis == null || YAxis == null)
             throw new InvalidOperationException("Both X and Y axes must be set before adding a series.");
 
+        var series = new ScatterSeries(title, dataPoints, plotStyle);
+        _series.Add(series);
+    }
+
+    public void AddScatterSeries(ScatterSeries series)
+    {
+        if (series == null)
+            throw new ArgumentNullException(nameof(series), "Series cannot be null.");
+        if (XAxis == null || YAxis == null)
+            throw new InvalidOperationException("Both X and Y axes must be set before adding a series.");
         _series.Add(series);
     }
 
@@ -119,10 +141,10 @@ public class Plot(PlotOptions options)
         // 3. Create Scale Transform
         ScaleTransform scale = CreateScaleTransform(plotArea);
 
-        // 4. Render SVG (Example)
+        // 4. Render SVG
         string svgContent = SvgPlotRenderer.Render(this, plotArea, scale);
 
-        // 5. Save File (Example)
+        // 5. Save File
         File.WriteAllText(filePath, svgContent);
         Console.WriteLine($"Plot saved successfully to {filePath}");
     }
