@@ -1,10 +1,12 @@
 using System;
+using System.Xml.Linq;
 using System.Globalization;
 using System.Security;
 using System.Text;
 using SharpSvgPlotter.Components;
 using SharpSvgPlotter.Primitives;
 using SharpSvgPlotter.Utils;
+using SharpSvgPlotter.Series;
 
 namespace SharpSvgPlotter.Renderer;
 
@@ -18,6 +20,7 @@ public static class SvgPlotRenderer
     private const double AxisTitleFontSize = 12.0;
     private const double TickLabelFontSize = 10.0;
     private const double PlotTitleFontSize = 16.0;
+    private static readonly XNamespace _ns = XNamespace.Get("http://www.w3.org/2000/svg");
 
     public static string Render(Plot plot, PlotArea plotArea, ScaleTransform scale)
     {
@@ -29,86 +32,117 @@ public static class SvgPlotRenderer
         var culture = CultureInfo.InvariantCulture; // IMPORTANT for decimals in SVG
 
         // --- 2. SVG Root Element ---
-        svg.AppendLine(
-            $"<svg width=\"{plot.Width.ToString(culture)}\"" +
-            $"height=\"{plot.Height.ToString(culture)}\"" +
-            "xmlns=\"http://www.w3.org/2000/svg\">"
+        var svgRoot = new XElement(_ns + "svg",
+            new XAttribute("width", plot.Width.ToString(culture)),
+            new XAttribute("height", plot.Height.ToString(culture))
         );
 
         // --- 3. Background ---
-        svg.AppendLine(
-            $"  <rect x=\"0\" y=\"0\" width=\"{plot.Width.ToString(culture)}\" " +
-            $"height=\"{plot.Height.ToString(culture)}\" fill=\"{plot.BackgroundColor}\" />"
-        );
+        svgRoot.Add(new XElement(_ns + "rect",
+            new XAttribute("x", 0),
+            new XAttribute("y", 0),
+            new XAttribute("width", plot.Width.ToString(culture)),
+            new XAttribute("height", plot.Height.ToString(culture)),
+            new XAttribute("fill", plot.BackgroundColor ?? "white")
+        ));
 
         // --- 4. Plot Title ---
         if (!string.IsNullOrEmpty(plot.Title))
         {
             double titleX = plot.Width / 2;
             double titleY = plot.Margins.Top / 2;
-            svg.AppendLine(
-                $"  <text x=\"{titleX.ToString(culture)}\" y=\"{titleY.ToString(culture)}\" " +
-                $"text-anchor=\"middle\" font-size=\"{PlotTitleFontSize.ToString(culture)}\" fill=\"black\">" +
-                $"{SecurityElement.Escape(plot.Title)}</text>"
-            );
+            svgRoot.Add(new XElement(_ns + "text",
+                new XAttribute("x", titleX.ToString(culture)),
+                new XAttribute("y", titleY.ToString(culture)),
+                new XAttribute("text-anchor", "middle"),
+                new XAttribute("font-size", PlotTitleFontSize.ToString(culture)),
+                new XAttribute("fill", "black"),
+                plot.Title
+            ));
         }
 
         // --- Define Clip Path (before use) ---
-        svg.AppendLine("  <defs>");
-        svg.AppendLine($"    <clipPath id=\"plotAreaClip\">");
-        svg.AppendLine(
-            $"      <rect x=\"{plotArea.X.ToString(culture)}\" y=\"{plotArea.Y.ToString(culture)}\" " +
-            $"width=\"{plotArea.Width.ToString(culture)}\" height=\"{plotArea.Height.ToString(culture)}\" />"
-        );
-        svg.AppendLine($"    </clipPath>");
-        svg.AppendLine("  </defs>");
+        svgRoot.Add(new XElement(
+            _ns + "defs",
+            new XElement(
+                _ns + "clipPath",
+                new XAttribute("id", "plotAreaClip"),
+                new XElement(
+                    _ns + "rect",
+                    new XAttribute("x", plotArea.X.ToString(culture)),
+                    new XAttribute("y", plotArea.Y.ToString(culture)),
+                    new XAttribute("width", plotArea.Width.ToString(culture)),
+                    new XAttribute("height", plotArea.Height.ToString(culture))
+                )
+            )
+        ));
 
         // --- 5. Render Axes ---
-        svg.Append(RenderXAxis(plot.XAxis, plot.YAxis, plotArea, scale, culture));
-        svg.Append(RenderYAxis(plot.YAxis, plot.XAxis, plotArea, scale, culture));
+        svgRoot.Add(RenderXAxis(plot.XAxis, plot.YAxis, plotArea, scale, culture));
+        svgRoot.Add(RenderYAxis(plot.YAxis, plot.XAxis, plotArea, scale, culture));
 
         // --- 6. Plot Area Border ---
-        svg.AppendLine(
-            $"  <rect x=\"{plotArea.X.ToString(culture)}\" y=\"{plotArea.Y.ToString(culture)}\" " +
-            $"width=\"{plotArea.Width.ToString(culture)}\" height=\"{plotArea.Height.ToString(culture)}\" " +
-            $"fill=\"none\" stroke=\"gray\" stroke-width=\"1\" />"
-        );
+        svgRoot.Add(new XElement(
+            _ns + "rect",
+            new XAttribute("x", plotArea.X.ToString(culture)),
+            new XAttribute("y", plotArea.Y.ToString(culture)),
+            new XAttribute("width", plotArea.Width.ToString(culture)),
+            new XAttribute("height", plotArea.Height.ToString(culture)),
+            new XAttribute("fill", "none"),
+            new XAttribute("stroke", "gray"),
+            new XAttribute("stroke-width", "1")
+        ));
 
         // --- 7. Legend Area (Placeholder Group) ---
         // TODO: Example: Top right corner, adjust translate values
-        double legendX = plotArea.X + plotArea.Width + 10;
+        double legendX = plotArea.X + plotArea.Width + 10; // Adjust position
         double legendY = plotArea.Y;
-        svg.AppendLine(
-            $"  <g id=\"legend\" transform=\"translate({legendX.ToString(culture)}, {legendY.ToString(culture)})\">"
-        );
-        // Legend items added later
-        svg.AppendLine("  </g>");
+        svgRoot.Add(new XElement(_ns + "g",
+            new XAttribute("id", "legend"),
+            new XAttribute("transform", $"translate({legendX.ToString(culture)}, {legendY.ToString(culture)})")
+            // Add legend items here later by adding children to this XElement
+        ));
 
         // --- 8. Data Series Area (Placeholder Group with Clipping) ---
-        svg.AppendLine($"  <g id=\"data-series\" clip-path=\"url(#plotAreaClip)\">");
-        // TODO: Render actual series data here in a later step
-        // Example call: svg.Append(RenderLineSeries(series, scale, culture));
-        svg.AppendLine("  </g>");
+        var dataSeriesGroup = new XElement(_ns + "g",
+            new XAttribute("id", "data-series"),
+            new XAttribute("clip-path", "url(#plotAreaClip)")
+            // TODO: Render actual series data here in a later step
+        );
+        svgRoot.Add(dataSeriesGroup);
 
-        // --- 9. Closing Tag ---
-        svg.AppendLine("</svg>");
+        // --- Render Actual Series Data ---
+        foreach (var series in plot.Series)
+        {
+            if (series is LineSeries lineSeries)
+            {
+                XElement? seriesPath = RenderLineSeries(lineSeries, scale, culture);
+                if (seriesPath != null)
+                {
+                    dataSeriesGroup.Add(seriesPath);
+                }
+            }
+        }
 
-        return svg.ToString();
+        // --- 9. Return SVG String ---
+        return svgRoot.ToString(SaveOptions.DisableFormatting);
     }
 
-    private static string RenderXAxis(
+    private static List<XElement> RenderXAxis(
         Axis xAxis, Axis yAxis, PlotArea plotArea, ScaleTransform scale, CultureInfo culture
     ) {
-        var sb = new StringBuilder();
-        double xPos = plotArea.X;
         double yPos = plotArea.Y + plotArea.Height;
+        List<XElement> elements = [];
 
         // Axis Line
-        sb.AppendLine(
-            $"    <line x1=\"{plotArea.X.ToString(culture)}\" y1=\"{yPos.ToString(culture)}\" " +
-            $"x2=\"{(plotArea.X + plotArea.Width).ToString(culture)}\" y2=\"{yPos.ToString(culture)}\" " +
-            $"stroke=\"black\" stroke-width=\"{DefaultAxisStrokeWidth.ToString(culture)}\" />"
-        );
+        elements.Add(new XElement(_ns + "line",
+            new XAttribute("x1", plotArea.X.ToString(culture)),
+            new XAttribute("y1", yPos.ToString(culture)),
+            new XAttribute("x2", (plotArea.X + plotArea.Width).ToString(culture)),
+            new XAttribute("y2", yPos.ToString(culture)),
+            new XAttribute("stroke", "black"),
+            new XAttribute("stroke-width", DefaultAxisStrokeWidth.ToString(culture))
+        ));
 
         // Ticks and Labels
         for (int i = 0; i < xAxis.TickPositions.Count; i++)
@@ -125,48 +159,61 @@ public static class SvgPlotRenderer
 
 
             // Tick Mark
-            sb.AppendLine(
-                $"    <line x1=\"{pixelX.ToString(culture)}\" y1=\"{yPos.ToString(culture)}\" " +
-                $"x2=\"{pixelX.ToString(culture)}\" y2=\"{(yPos + DefaultTickLength).ToString(culture)}\" " +
-                $"stroke=\"black\" stroke-width=\"{DefaultAxisStrokeWidth.ToString(culture)}\" />"
-            );
+            elements.Add(new XElement(_ns + "line",
+                new XAttribute("x1", pixelX.ToString(culture)),
+                new XAttribute("y1", yPos.ToString(culture)),
+                new XAttribute("x2", pixelX.ToString(culture)),
+                new XAttribute("y2", (yPos + DefaultTickLength).ToString(culture)),
+                new XAttribute("stroke", "black"),
+                new XAttribute("stroke-width", DefaultAxisStrokeWidth.ToString(culture))
+            ));
 
             // Tick Label Text
-            sb.AppendLine(
-                $"    <text x=\"{pixelX.ToString(culture)}\" y=\"{(yPos + XAxisLabelVerticalOffset).ToString(culture)}\" " +
-                $"text-anchor=\"middle\" font-size=\"{TickLabelFontSize.ToString(culture)}\" fill=\"black\">{SecurityElement.Escape(label)}</text>"
-            );
+            elements.Add(new XElement(_ns + "text",
+                new XAttribute("x", pixelX.ToString(culture)),
+                new XAttribute("y", (yPos + XAxisLabelVerticalOffset).ToString(culture)),
+                new XAttribute("text-anchor", "middle"),
+                new XAttribute("font-size", TickLabelFontSize.ToString(culture)),
+                new XAttribute("fill", "black"),
+                label
+            ));
         }
 
          // Axis Label
         if (!string.IsNullOrEmpty(xAxis.Label))
         {
-            double labelX = xPos + plotArea.Width / 2;
+            double labelX = plotArea.X + plotArea.Width / 2;
             // Position below tick labels, adjust margin division factor as needed
-            double labelY = yPos + plotArea.Height + plotArea.Height * 0.1 + TickLabelFontSize;
-            sb.AppendLine(
-                $"    <text x=\"{labelX.ToString(culture)}\" y=\"{labelY.ToString(culture)}\" " +
-                $"text-anchor=\"middle\" font-size=\"{AxisTitleFontSize.ToString(culture)}\" fill=\"black\">" +
-                $"{SecurityElement.Escape(xAxis.Label)}</text>"
-            );
+            // TODO: Dangerous, label can be outside the plot bounds - need to get whole plot area with margins
+            double labelY = plotArea.Y + plotArea.Height + plotArea.Height * 0.05 + TickLabelFontSize;
+            elements.Add(new XElement(_ns + "text",
+                new XAttribute("x", labelX.ToString(culture)),
+                new XAttribute("y", labelY.ToString(culture)),
+                new XAttribute("text-anchor", "middle"),
+                new XAttribute("font-size", AxisTitleFontSize.ToString(culture)),
+                new XAttribute("fill", "black"),
+                xAxis.Label
+            ));
         }
 
-        return sb.ToString();
+        return elements;
     }
 
-    private static string RenderYAxis(
+    private static List<XElement> RenderYAxis(
         Axis yAxis, Axis xAxis, PlotArea plotArea, ScaleTransform scale, CultureInfo culture
     ) {
-        var sb = new StringBuilder();
         double xPos = plotArea.X;
-        double yPos = plotArea.Y + plotArea.Height;
+        List<XElement> elements = [];
 
         // Axis Line
-        sb.AppendLine(
-            $"    <line x1=\"{xPos.ToString(culture)}\" y1=\"{plotArea.Y.ToString(culture)}\" " +
-            $"x2=\"{xPos.ToString(culture)}\" y2=\"{(plotArea.Y + plotArea.Height).ToString(culture)}\" " +
-            $"stroke=\"black\" stroke-width=\"{DefaultAxisStrokeWidth.ToString(culture)}\" />"
-        );
+        elements.Add(new XElement(_ns + "line",
+            new XAttribute("x1", xPos.ToString(culture)),
+            new XAttribute("y1", plotArea.Y.ToString(culture)),
+            new XAttribute("x2", xPos.ToString(culture)),
+            new XAttribute("y2", (plotArea.Y + plotArea.Height).ToString(culture)),
+            new XAttribute("stroke", "black"),
+            new XAttribute("stroke-width", DefaultAxisStrokeWidth.ToString(culture))
+        ));
 
         // Ticks and Labels
         for (int i = 0; i < yAxis.TickPositions.Count; i++)
@@ -182,34 +229,91 @@ public static class SvgPlotRenderer
                 continue;
 
             // Tick Mark
-            sb.AppendLine(
-                $"    <line x1=\"{(xPos - DefaultTickLength).ToString(culture)}\" y1=\"{pixelY.ToString(culture)}\" " +
-                $"x2=\"{xPos.ToString(culture)}\" y2=\"{pixelY.ToString(culture)}\" stroke=\"black\" " +
-                $"stroke-width=\"{DefaultAxisStrokeWidth.ToString(culture)}\" />"
-            );
+            elements.Add(new XElement(_ns + "line",
+                new XAttribute("x1", (xPos - DefaultTickLength).ToString(culture)),
+                new XAttribute("y1", pixelY.ToString(culture)),
+                new XAttribute("x2", xPos.ToString(culture)),
+                new XAttribute("y2", pixelY.ToString(culture)),
+                new XAttribute("stroke", "black"),
+                new XAttribute("stroke-width", DefaultAxisStrokeWidth.ToString(culture))
+            ));
 
             // Tick Label Text
-            sb.AppendLine(
-                $"    <text x=\"{(xPos - YAxisLabelHorizontalOffset).ToString(culture)}\" y=\"{pixelY.ToString(culture)}\" " +
-                $"text-anchor=\"end\" dominant-baseline=\"middle\" font-size=\"{TickLabelFontSize.ToString(culture)}\" " + 
-                $"fill=\"black\">{SecurityElement.Escape(label)}</text>"
-            );
+            elements.Add(new XElement(_ns + "text",
+                new XAttribute("x", (xPos - YAxisLabelHorizontalOffset).ToString(culture)),
+                new XAttribute("y", pixelY.ToString(culture)),
+                new XAttribute("text-anchor", "end"),
+                new XAttribute("dominant-baseline", "middle"),
+                new XAttribute("font-size", TickLabelFontSize.ToString(culture)),
+                new XAttribute("fill", "black"),
+                label
+            ));
         }
 
          // Axis Label
          if (!string.IsNullOrEmpty(yAxis.Label))
          {
             // Position left of tick labels, centered vertically, adjust margin division factor
-            double labelX = xPos - YAxisLabelHorizontalOffset - TickLabelFontSize; // Further left
-            double labelY = yPos + plotArea.Height / 2;
+            double labelX = plotArea.X - YAxisLabelHorizontalOffset - TickLabelFontSize; // Further left
+            double labelY = plotArea.Y + plotArea.Height / 2;
             string rotateTransform = $"transform=\"rotate(-90 {labelX.ToString(culture)} {labelY.ToString(culture)})\"";
-            sb.AppendLine(
-                $"    <text x=\"{labelX.ToString(culture)}\" y=\"{labelY.ToString(culture)}\" " +
-                $"{rotateTransform} text-anchor=\"middle\" font-size=\"{AxisTitleFontSize.ToString(culture)}\" fill=\"black\">" +
-                $"{SecurityElement.Escape(yAxis.Label)}</text>"
-            );
+            elements.Add(new XElement(_ns + "text",
+                new XAttribute("x", labelX.ToString(culture)),
+                new XAttribute("y", labelY.ToString(culture)),
+                new XAttribute("transform", rotateTransform),
+                new XAttribute("text-anchor", "middle"),
+                new XAttribute("font-size", AxisTitleFontSize.ToString(culture)),
+                new XAttribute("fill", "black"),
+                yAxis.Label
+            ));
          }
 
-        return sb.ToString();
+        return elements;
+    }
+
+    /// <summary>
+    /// Renders a line series as an SVG path element.
+    /// </summary>
+    /// <param name="series">The line series to render.</param>
+    /// <param name="scale">The scale transform to apply to the data points.</param>
+    /// <param name="culture">The culture info for formatting numbers.</param>
+    /// <returns>An XElement representing the SVG path for the line series.</returns>
+    private static XElement? RenderLineSeries(LineSeries series, ScaleTransform scale, CultureInfo culture)
+    {
+        if (series.DataPoints == null || !series.DataPoints.Any())
+        {
+        return null;
+        }
+
+        var pathData = new StringBuilder();
+        bool firstPoint = true;
+
+        foreach (DataPoint dataPoint in series.DataPoints)
+        {
+            DataPoint transformedPoint = scale.Transform(dataPoint);
+            if (firstPoint)
+            {
+                pathData.Append($"M {transformedPoint.X.ToString(culture)} {transformedPoint.Y.ToString(culture)}");
+                firstPoint = false;
+            }
+            else
+            {
+                pathData.Append($" L {transformedPoint.X.ToString(culture)} {transformedPoint.Y.ToString(culture)}");
+            }
+        }
+
+        // Get style from the series
+        PlotStyle style = series.PlotStyle;
+
+        // Create the XElement for the path
+        var pathElement = new XElement(_ns + "path",
+            new XAttribute("d", pathData.ToString()),
+            new XAttribute("stroke", style.StrokeColor),
+            new XAttribute("stroke-width", style.StrokeWidth.ToString(culture)),
+            (!string.IsNullOrEmpty(style.StrokeDashArray)) ? new XAttribute("stroke-dasharray", style.StrokeDashArray) : null,
+            new XAttribute("fill", "none")
+        );
+
+        return pathElement;
     }
 }
