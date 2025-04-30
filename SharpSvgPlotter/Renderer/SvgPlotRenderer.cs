@@ -7,6 +7,7 @@ using SharpSvgPlotter.Components;
 using SharpSvgPlotter.Primitives;
 using SharpSvgPlotter.Utils;
 using SharpSvgPlotter.Series;
+using SharpSvgPlotter.Primitives.PlotStyles;
 
 namespace SharpSvgPlotter.Renderer;
 
@@ -93,7 +94,7 @@ internal static class SvgPlotRenderer
             new XAttribute("stroke-width", "1")
         ));
 
-        // --- 7. Legend Area (Placeholder Group) ---
+        // --- 7. Legend Area ---
         // TODO: Example: Top right corner, adjust translate values
         double legendX = plotArea.X + plotArea.Width + 10; // Adjust position
         double legendY = plotArea.Y;
@@ -103,15 +104,14 @@ internal static class SvgPlotRenderer
             // Add legend items here later by adding children to this XElement
         ));
 
-        // --- 8. Data Series Area (Placeholder Group with Clipping) ---
+        // --- 8. Data Series Area ---
         var dataSeriesGroup = new XElement(_ns + "g",
             new XAttribute("id", "data-series"),
             new XAttribute("clip-path", "url(#plotAreaClip)")
-            // TODO: Render actual series data here in a later step
         );
         svgRoot.Add(dataSeriesGroup);
 
-        // --- Render Actual Series Data ---
+        // --- Render Series Data ---
         foreach (var series in plot.Series)
         {
             if (series is LineSeries lineSeries)
@@ -120,6 +120,14 @@ internal static class SvgPlotRenderer
                 if (seriesPath != null)
                 {
                     dataSeriesGroup.Add(seriesPath);
+                }
+            }
+            else if (series is ScatterSeries scatterSeries)
+            {
+                List<XElement> markers = RenderScatterSeries(scatterSeries, scale, culture);
+                foreach (var marker in markers)
+                {
+                    dataSeriesGroup.Add(marker);
                 }
             }
         }
@@ -298,7 +306,7 @@ internal static class SvgPlotRenderer
         }
 
         // Get style from the series
-        PlotStyle style = series.PlotStyle;
+        LinePlotStyle style = series.PlotStyle as LinePlotStyle ?? new LinePlotStyle();
 
         // Create the XElement for the path
         var pathElement = new XElement(_ns + "path",
@@ -310,5 +318,36 @@ internal static class SvgPlotRenderer
         );
 
         return pathElement;
+    }
+
+    private static List<XElement> RenderScatterSeries(ScatterSeries series, ScaleTransform scale, CultureInfo culture)
+    {
+        List<XElement> markerElements = [];
+        if (series.DataPoints == null) return markerElements;
+
+        // Get style from the series
+        ScatterPlotStyle style = series.PlotStyle as ScatterPlotStyle ?? new ScatterPlotStyle();
+
+        MarkerType markerShape = style.MarkerShape;
+
+        foreach (DataPoint dataPoint in series.DataPoints)
+        {
+            DataPoint transformedPoint = scale.Transform(dataPoint);
+
+            var marker = new XElement(_ns + markerShape.ToString().ToLower(),
+                new XAttribute("cx", transformedPoint.X.ToString(culture)),
+                new XAttribute("cy", transformedPoint.Y.ToString(culture)),
+                new XAttribute("r", style.MarkerSize.ToString(culture)),
+                new XAttribute("fill", style.FillColor),
+                (style.StrokeColor != "none") ? new XAttribute("stroke", style.StrokeColor) : null,
+                (style.StrokeWidth > 0 && style.StrokeColor != "none") ? new XAttribute(
+                    "stroke-width", style.StrokeWidth.ToString(culture)
+                ) : null,
+                new XAttribute("opacity", style.FillOpacity.ToString(culture))
+            );
+            markerElements.Add(marker);
+        }
+
+        return markerElements;
     }
 }
