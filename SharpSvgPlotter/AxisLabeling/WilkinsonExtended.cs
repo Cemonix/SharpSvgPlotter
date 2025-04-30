@@ -6,12 +6,12 @@ namespace SharpSvgPlotter.AxisLabeling;
 // TODO: Not finished - probably overkill for first versions of the library
 // Paper - An Extension of Wilkinson’s Algorithm for Positioning Tick Labels on Axes
 // https://rdrr.io/cran/labeling/src/R/labeling.R
-public class WilkinsonExtended
+internal class WilkinsonExtended
 {
     private static readonly float[] Q = [1, 5, 2, 2.5f, 4, 3];
     private static readonly float[] w = [0.2f, 0.25f, 0.5f, 0.05f];
 
-    public static TickLabelingResult? GenerateLabels(
+    internal static TickLabelingResult? GenerateLabels(
         double rangeMin, double rangeMax, double ro_t, int max_iterations
     ) {
         throw new NotImplementedException("GenerateLabels not implemented.");

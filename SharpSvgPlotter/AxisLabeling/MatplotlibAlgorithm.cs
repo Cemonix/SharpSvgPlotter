@@ -8,16 +8,16 @@ namespace SharpSvgPlotter.AxisLabeling;
 /// Based on the R implementation found in the 'labeling' package:
 /// https://rdrr.io/cran/labeling/src/R/labeling.R
 /// </summary>
-public class MatplotlibAlgorithm : AxisLabelingAlgorithm
+internal class MatplotlibAlgorithm : AxisLabelingAlgorithm
 {
-    public override string AlgorithmName => "Matplotlib";
+    internal override string AlgorithmName => "Matplotlib";
 
     // Predefined "nice" step multipliers
     private static readonly double[] _steps = [1.0, 2.0, 5.0, 10.0];
     private static readonly double _threshold = 100.0; // Threshold for offset calculation
     private const bool _trim = true; // Controls whether to trim extra bins extending beyond data max
 
-    public override TickCalculationResult? GenerateTicks(
+    internal override TickCalculationResult? GenerateTicks(
         double dataMin, double dataMax, double axisLength, AxisLabelingOptions? options)
     {
         // --- Input Validation ---

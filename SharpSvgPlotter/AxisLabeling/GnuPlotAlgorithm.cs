@@ -8,11 +8,11 @@ namespace SharpSvgPlotter.AxisLabeling;
 /// Based on the R implementation found in the 'labeling' package:
 /// https://rdrr.io/cran/labeling/src/R/labeling.R
 /// </summary>
-public class GnuPlotAlgorithm : AxisLabelingAlgorithm
+internal class GnuPlotAlgorithm : AxisLabelingAlgorithm
 {
-    public override string AlgorithmName => "GnuPlot";
+    internal override string AlgorithmName => "GnuPlot";
 
-    public override TickCalculationResult? GenerateTicks(
+    internal override TickCalculationResult? GenerateTicks(
         double dataMin, double dataMax, double axisLength, AxisLabelingOptions? options)
     {
         // --- Input Validation ---
