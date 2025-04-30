@@ -4,11 +4,19 @@ using SharpSvgPlotter.Primitives;
 
 var xData = new List<double> { 1, 2, 3, 4, 5 };
 var yData = new List<double> { 2, 3, 5, 7, 11 };
-var dataPoints = xData.Zip(yData, (x, y) => new DataPoint(x, y)).ToList();
+var dataPoints = DataPoint.FromList(xData, yData).ToList();
 
-var plot = new Plot(800, 600, new PlotMargins(50, 50, 50, 50));
-plot.SetTitle("Sample Plot");
-plot.SetAlgorithm(new MatplotlibAlgorithm());
+var plot = new Plot(new PlotOptions
+{
+    Width = 800,
+    Height = 600,
+    Title = "Sample Plot",
+    BackgroundColor = "#FFFFFF",
+    AxisLabelFontSize = 12,
+    AxisLabelTickCount = 5,
+    AxisLabelFormatString = "G3",
+    LabelingAlgorithm = AxisLabelingAlgorithmType.HeckBert,
+});
 plot.SetXAxis("X Axis");
 plot.SetYAxis("Y Axis");
 
