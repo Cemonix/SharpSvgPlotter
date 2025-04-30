@@ -6,28 +6,22 @@ using SharpSvgPlotter.Series;
 
 namespace SharpSvgPlotter;
 
-public class Plot(double width, double height, PlotMargins plotMargins)
+public class Plot(PlotOptions options)
 {
     private readonly List<ISeries> _series = [];
-    
-    public double Width { get; init; } = width;
-    public double Height { get; init; } = height;
-    public PlotMargins Margins { get; init; } = plotMargins;
-    public string Title { get; private set; } = string.Empty;
-    public string BackgroundColor { get; private set; } = "#FFFFFF";
-    public AxisLabelingAlgorithm? LabelingAlgorithm { get; private set; }
-    // TODO: Create new options class that will consists of all axis options and AxisLabelingOptions will be created from it
-    public AxisLabelingOptions? LabelingOptions { get; private set; } 
-    public Axis? XAxis { get; private set; }
-    public Axis? YAxis { get; private set; }
+
+    public double Width { get; init; } = options.Width;
+    public double Height { get; init; } = options.Height;
+    public PlotMargins Margins { get; init; } = options.Margins;
+    public string Title { get; init; } = options.Title;
+    public string BackgroundColor { get; init; } = options.BackgroundColor;
+    public int AxisLabelFontSize { get; init; } = options.AxisLabelFontSize;
+    public int AxisLabelTickCount { get; init; } = options.AxisLabelTickCount;
+    public string AxisLabelFormatString { get; init; } = options.AxisLabelFormatString;
+    public AxisLabelingAlgorithmType? LabelingAlgorithm { get; init; } = options.LabelingAlgorithm;
     public IReadOnlyList<ISeries> Series => _series.AsReadOnly();
-
-    public void SetTitle(string title) => Title = title ?? string.Empty;
-    
-    public void SetBackgroundColor(string color) => BackgroundColor = color ?? "#FFFFFF";
-
-    public void SetAlgorithm(AxisLabelingAlgorithm algorithm) => LabelingAlgorithm = algorithm;
-    public void SetOptions(AxisLabelingOptions options) => LabelingOptions = options;
+    internal Axis? XAxis { get; private set; }
+    internal Axis? YAxis { get; private set; }
 
     /// <summary>
     /// Configures the X-axis.
@@ -39,8 +33,17 @@ public class Plot(double width, double height, PlotMargins plotMargins)
     public void SetXAxis(string label, bool autoScale = true) {
         if (LabelingAlgorithm == null)
             throw new InvalidOperationException("Labeling algorithm must be set before configuring axes.");
-
-        XAxis = new Axis(label, LabelingAlgorithm, LabelingOptions, autoScale);
+        
+        XAxis = new Axis(
+            label,
+            GetLabelingAlgorithm(LabelingAlgorithm),
+            new AxisLabelingOptions() {
+                FontSize = AxisLabelFontSize,
+                TickCount = AxisLabelTickCount,
+                FormatString = AxisLabelFormatString
+            },
+            autoScale
+        );
     }
 
     /// <summary>
@@ -54,7 +57,16 @@ public class Plot(double width, double height, PlotMargins plotMargins)
         if (LabelingAlgorithm == null)
             throw new InvalidOperationException("Labeling algorithm must be set before configuring axes.");
 
-        YAxis = new Axis(label, LabelingAlgorithm, LabelingOptions, autoScale);
+        YAxis = new Axis(
+            label,
+            GetLabelingAlgorithm(LabelingAlgorithm),
+            new AxisLabelingOptions() {
+                FontSize = AxisLabelFontSize,
+                TickCount = AxisLabelTickCount,
+                FormatString = AxisLabelFormatString
+            },
+            autoScale
+        );
     }
 
     /// <summary>
@@ -113,6 +125,17 @@ public class Plot(double width, double height, PlotMargins plotMargins)
         // 5. Save File (Example)
         File.WriteAllText(filePath, svgContent);
         Console.WriteLine($"Plot saved successfully to {filePath}");
+    }
+
+    private static AxisLabelingAlgorithm GetLabelingAlgorithm(AxisLabelingAlgorithmType? algorithmType)
+    {
+        return algorithmType switch
+        {
+            AxisLabelingAlgorithmType.HeckBert => new HeckBertAlgorithm(),
+            AxisLabelingAlgorithmType.GnuPlot => new GnuPlotAlgorithm(),
+            AxisLabelingAlgorithmType.Matplotlib => new MatplotlibAlgorithm(),
+            _ => throw new ArgumentException("Invalid labeling algorithm type.", nameof(algorithmType))
+        };
     }
 
     private PlotArea CalculatePlotArea() => new (Width, Height, Margins);
