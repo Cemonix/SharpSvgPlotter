@@ -5,7 +5,7 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpSvgPlotter", "SharpSvgPlotter\SharpSvgPlotter.csproj", "{D87A82F0-6EEC-4007-9695-D6361FB32411}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpSvgPlotter.Test", "SharpSvgPlotter.Test\SharpSvgPlotter.Test.csproj", "{60054372-A7D1-432D-B04C-FFCDA0098944}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpSvgPlotter.Tests", "SharpSvgPlotter.Test\SharpSvgPlotter.Tests.csproj", "{60054372-A7D1-432D-B04C-FFCDA0098944}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpSvgPlotter.Demo", "SharpSvgPlotter.Demo\SharpSvgPlotter.Demo.csproj", "{DFB2F033-CBFF-4A89-A7DD-200E34C7DF85}"
 EndProject
