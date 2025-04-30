@@ -1,30 +1,58 @@
 ﻿using SharpSvgPlotter;
 using SharpSvgPlotter.AxisLabeling;
 using SharpSvgPlotter.Primitives;
+using SharpSvgPlotter.Primitives.PlotStyles;
 
-var xData = new List<double> { 1, 2, 3, 4, 5 };
-var yData = new List<double> { 2, 3, 5, 7, 11 };
-var dataPoints = DataPoint.FromList(xData, yData).ToList();
-
-var plot = new Plot(new PlotOptions
+static void IrisScatterPlot()
 {
-    Width = 800,
-    Height = 600,
-    Title = "Sample Plot",
-    BackgroundColor = "#FFFFFF",
-    AxisLabelFontSize = 12,
-    AxisLabelTickCount = 5,
-    AxisLabelFormatString = "G3",
-    LabelingAlgorithm = AxisLabelingAlgorithmType.HeckBert,
-});
-plot.SetXAxis("X Axis");
-plot.SetYAxis("Y Axis");
+    string filePath = "Data/Iris.csv";
 
-plot.AddLineSeries("Sample Line", dataPoints, new PlotStyle
-{
-    StrokeColor = "blue",
-    StrokeWidth = 2,
-});
+    if (!File.Exists(filePath))
+    {
+        Console.WriteLine($"File not found: {filePath}");
+        return;
+    }
 
-plot.Save("sample_plot.svg");
-Console.WriteLine("Plot saved as sample_plot.svg");
+    var data = File.ReadAllLines(filePath)
+        .Skip(1)
+        .Select(line => line.Split(','))
+        .Select(parts => new
+        {
+            SepalLength = double.Parse(parts[0]),
+            SepalWidth = double.Parse(parts[1]),
+            PetalLength = double.Parse(parts[2]),
+            PetalWidth = double.Parse(parts[3]),
+            Species = parts[4]
+        })
+        .ToList();
+
+    var dataPoints = data.Select(d => new DataPoint(d.SepalLength, d.SepalWidth)).ToList();
+
+    var plot = new Plot(new PlotOptions
+    {
+        Width = 800,
+        Height = 600,
+        Title = "Iris Dataset Scatter Plot",
+        BackgroundColor = "#FFFFFF",
+        AxisLabelFontSize = 12,
+        AxisLabelTickCount = 5,
+        AxisLabelFormatString = "G3",
+        LabelingAlgorithm = AxisLabelingAlgorithmType.HeckBert,
+    });
+    plot.SetXAxis("Sepal Length");
+    plot.SetYAxis("Sepal Width");
+
+    plot.AddScatterSeries("Iris Data", dataPoints, new ScatterPlotStyle
+    {
+        FillColor = "blue",
+        FillOpacity = 0.5,
+        StrokeColor = "black",
+        StrokeWidth = 1,
+        StrokeOpacity = 0.8,
+    });
+
+    plot.Save("iris_scatter_plot.svg");
+    Console.WriteLine("Iris scatter plot saved as iris_scatter_plot.svg");
+}
+
+IrisScatterPlot();
