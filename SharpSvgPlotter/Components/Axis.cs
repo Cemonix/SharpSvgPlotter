@@ -5,7 +5,7 @@ using SharpSvgPlotter.Utils;
 
 namespace SharpSvgPlotter.Components;
 
-public class Axis(
+internal class Axis(
     string label,
     AxisLabelingAlgorithm labelingAlgorithm,
     AxisLabelingOptions? labelingOptions = null,
@@ -16,41 +16,11 @@ public class Axis(
     public string Label { get; init; } = label ?? string.Empty;
     public bool AutoScale { get; init; } = autoScale;
 
-    public AxisLabelingAlgorithm LabelingAlgorithm { get; init; } = labelingAlgorithm ?? new HeckBertAlgorithm();
-    public AxisLabelingOptions LabelingOptions { get; init; } = labelingOptions ?? new(); // Default options
+    internal AxisLabelingAlgorithm LabelingAlgorithm { get; init; } = labelingAlgorithm ?? new HeckBertAlgorithm();
+    internal AxisLabelingOptions LabelingOptions { get; init; } = labelingOptions ?? new(); // Default options
 
-    public List<double> TickPositions { get; private set; } = [];
-    public List<string> TickLabels { get; private set; } = [];
-
-    public void SetRange(double min, double max)
-    {
-        if (max < min)
-            throw new ArgumentException("Max must be greater than or equal to Min.");
-        if (Math.Abs(max - min) < Constants.Epsilon)
-        {
-            double padding = Constants.Epsilon;
-            if (max == min)
-            {
-                max += padding / 2;
-                min -= padding / 2;
-            }
-            else if (max > min)
-            {
-                max += padding;
-            }
-            else
-            {
-                min -= padding;
-            }
-        }
-        if (double.IsInfinity(min) || double.IsInfinity(max))
-            throw new ArgumentException("Min and Max cannot be set to infinity.");
-        if (double.IsNaN(min) || double.IsNaN(max))
-            throw new ArgumentException("Min and Max cannot be NaN.");
-            
-        Min = min;
-        Max = max;
-    }
+    internal List<double> TickPositions { get; private set; } = [];
+    internal List<string> TickLabels { get; private set; } = [];
 
     /// <summary>
     /// Calculates the range of the axis based on the provided series data.
@@ -58,7 +28,7 @@ public class Axis(
     /// <param name="series">The series data to calculate the range from.</param>
     /// <param name="axis_type">The type of axis (X or Y).</param>
     /// <remarks>
-    public void CalculateRange(IEnumerable<ISeries> series, AxisType axis_type)
+    internal void CalculateRange(IEnumerable<ISeries> series, AxisType axis_type)
     {
         if (!AutoScale)
             return;
@@ -125,7 +95,7 @@ public class Axis(
     /// </summary>
     /// <param name="axisLength">The physical length of the axis in the output medium (e.g., pixels).
     /// Required by some algorithms for density calculations.</param>
-    public void CalculateTicks(double axisLength)
+    internal void CalculateTicks(double axisLength)
     {
         TickPositions.Clear();
         TickLabels.Clear();
@@ -165,6 +135,35 @@ public class Axis(
                 TickLabels.Add(Max.ToString(LabelingOptions.FormatString ?? "G3"));
             }
         }
+    }
 
+    private void SetRange(double min, double max)
+    {
+        if (max < min)
+            throw new ArgumentException("Max must be greater than or equal to Min.");
+        if (Math.Abs(max - min) < Constants.Epsilon)
+        {
+            double padding = Constants.Epsilon;
+            if (max == min)
+            {
+                max += padding / 2;
+                min -= padding / 2;
+            }
+            else if (max > min)
+            {
+                max += padding;
+            }
+            else
+            {
+                min -= padding;
+            }
+        }
+        if (double.IsInfinity(min) || double.IsInfinity(max))
+            throw new ArgumentException("Min and Max cannot be set to infinity.");
+        if (double.IsNaN(min) || double.IsNaN(max))
+            throw new ArgumentException("Min and Max cannot be NaN.");
+            
+        Min = min;
+        Max = max;
     }
 }
