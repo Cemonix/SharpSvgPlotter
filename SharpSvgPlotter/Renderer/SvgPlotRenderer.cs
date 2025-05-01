@@ -7,7 +7,7 @@ using SharpSvgPlotter.Components;
 using SharpSvgPlotter.Primitives;
 using SharpSvgPlotter.Utils;
 using SharpSvgPlotter.Series;
-using SharpSvgPlotter.Primitives.PlotStyles;
+using SharpSvgPlotter.Styles;
 using SharpSvgPlotter.PlotOptions;
 
 namespace SharpSvgPlotter.Renderer;
@@ -167,6 +167,13 @@ internal static class SvgPlotRenderer
             {
                 List<XElement> markers = RenderScatterSeries(scatterSeries, scale, culture);
                 dataSeriesGroup.Add(markers);
+            }
+            else if (series is HistogramSeries histogramSeries)
+            {
+                List<XElement> binElements = RenderHistogramSeries(
+                    histogramSeries, scale, culture
+                );
+                dataSeriesGroup.Add(binElements);
             }
         }
 
@@ -462,10 +469,10 @@ internal static class SvgPlotRenderer
             {
                 string shapeName = scatterStyle.MarkerShape.ToString().ToLower();
                 symbol = new XElement(_ns + shapeName);
-                symbol.Add(new XAttribute("fill", scatterStyle.MarkerFill));
-                if (scatterStyle.MarkerStroke != "none") {
-                    symbol.Add(new XAttribute("stroke", scatterStyle.MarkerStroke));
-                    symbol.Add(new XAttribute("stroke-width", scatterStyle.MarkerStrokeWidth.ToString(culture)));
+                symbol.Add(new XAttribute("fill", scatterStyle.FillColor));
+                if (scatterStyle.StrokeColor != "none") {
+                    symbol.Add(new XAttribute("stroke", scatterStyle.StrokeColor));
+                    symbol.Add(new XAttribute("stroke-width", scatterStyle.StrokeWidth.ToString(culture)));
                 }
                 symbol.Add(new XAttribute("opacity", scatterStyle.FillOpacity.ToString(culture)));
 
@@ -479,6 +486,18 @@ internal static class SvgPlotRenderer
                     symbol.Add(new XAttribute("width", symbolSize.ToString(culture)));
                     symbol.Add(new XAttribute("height", symbolSize.ToString(culture)));
                 }
+            }
+            else if (series.PlotStyle is HistogramStyle histogramStyle)
+            {
+                symbol = new XElement(_ns + "rect",
+                    new XAttribute("x", symbolX.ToString(culture)),
+                    new XAttribute("y", (symbolCenterY - symbolSize / 2).ToString(culture)),
+                    new XAttribute("width", symbolSize.ToString(culture)),
+                    new XAttribute("height", symbolSize.ToString(culture)),
+                    new XAttribute("fill", histogramStyle.FillColor),
+                    new XAttribute("stroke", histogramStyle.StrokeColor),
+                    new XAttribute("stroke-width", histogramStyle.StrokeWidth.ToString(culture))
+                );
             }
 
             if (symbol != null) legendGroup.Add(symbol);
@@ -573,18 +592,18 @@ internal static class SvgPlotRenderer
             var marker = new XElement(_ns + shapeName);
 
             // Common attributes from style
-            marker.Add(new XAttribute("fill", style.MarkerFill));
-            if (style.MarkerStroke != "none") {
-                marker.Add(new XAttribute("stroke", style.MarkerStroke));
-                marker.Add(new XAttribute("stroke-width", style.MarkerStrokeWidth.ToString(culture)));
+            marker.Add(new XAttribute("fill", style.FillColor));
+            if (style.StrokeColor != "none") {
+                marker.Add(new XAttribute("stroke", style.StrokeColor));
+                marker.Add(new XAttribute("stroke-width", style.StrokeWidth.ToString(culture)));
             }
             marker.Add(new XAttribute("opacity", style.FillOpacity.ToString(culture)));
 
             // Shape-specific attributes from style & transformed point
             if (markerShape == MarkerType.Circle) {
-                 marker.Add(new XAttribute("cx", transformedPoint.X.ToString(culture)));
-                 marker.Add(new XAttribute("cy", transformedPoint.Y.ToString(culture)));
-                 marker.Add(new XAttribute("r", style.MarkerSize.ToString(culture)));
+                marker.Add(new XAttribute("cx", transformedPoint.X.ToString(culture)));
+                marker.Add(new XAttribute("cy", transformedPoint.Y.ToString(culture)));
+                marker.Add(new XAttribute("r", style.MarkerSize.ToString(culture)));
             } else if (markerShape == MarkerType.Square) {
                 double size = style.MarkerSize;
                 marker.Add(new XAttribute("x", (transformedPoint.X - size / 2).ToString(culture)));
@@ -597,5 +616,50 @@ internal static class SvgPlotRenderer
         }
 
         return markerElements;
+    }
+
+    private static List<XElement> RenderHistogramSeries(
+        HistogramSeries series,
+        ScaleTransform scale,
+        CultureInfo culture
+    ) {
+        List<XElement> binElements = [];
+        if (series.CalculatedBins == null || series.CalculatedBins.Count == 0) return binElements;
+
+        var style = series.PlotStyle as HistogramStyle ?? new HistogramStyle();
+
+        foreach (var bin in series.CalculatedBins)
+        {
+            if (bin.Count <= 0) continue; // Don't draw empty bins
+
+            // Transform bin edges and counts to screen coordinates
+            double screenX1 = scale.Transform(new DataPoint(bin.LowerBound, 0)).X;
+            double screenX2 = scale.Transform(new DataPoint(bin.UpperBound, 0)).X;
+            double screenYTop = scale.Transform(new DataPoint(bin.LowerBound, bin.Count)).Y; // Y is inverted
+            // Y=0 position on screen
+            double screenYBottom = scale.Transform(new DataPoint(bin.LowerBound, 0)).Y;
+
+            // Ensure positive width/height due to potential floating point issues
+            double rectX = Math.Min(screenX1, screenX2);
+            double rectWidth = Math.Abs(screenX2 - screenX1);
+            double rectY = Math.Min(screenYTop, screenYBottom);
+            double rectHeight = Math.Abs(screenYBottom - screenYTop);
+
+            // Prevent tiny artifacts if width/height is essentially zero
+            if (rectWidth < Constants.Epsilon || rectHeight < Constants.Epsilon) continue;
+
+            binElements.Add(new XElement(_ns + "rect",
+                new XAttribute("x", rectX.ToString(culture)),
+                new XAttribute("y", rectY.ToString(culture)),
+                new XAttribute("width", rectWidth.ToString(culture)),
+                new XAttribute("height", rectHeight.ToString(culture)),
+                new XAttribute("fill", style.FillColor),
+                new XAttribute("fill-opacity", style.FillOpacity.ToString(culture)),
+                new XAttribute("stroke", style.BorderColor),
+                new XAttribute("stroke-width", style.BorderWidth.ToString(culture))
+            ));
+        }
+
+        return binElements;
     }
 }
