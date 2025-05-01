@@ -1,10 +1,11 @@
 ﻿using SharpSvgPlotter.AxisLabeling;
 using SharpSvgPlotter.Components;
 using SharpSvgPlotter.Primitives;
-using SharpSvgPlotter.Primitives.PlotStyles;
+using SharpSvgPlotter.Styles;
 using SharpSvgPlotter.Renderer;
 using SharpSvgPlotter.Series;
 using Options = SharpSvgPlotter.PlotOptions;
+using SharpSvgPlotter.Series.HistogramSupport;
 
 namespace SharpSvgPlotter;
 
@@ -73,6 +74,21 @@ public class Plot(Options.PlotOptions options)
     }
 
     /// <summary>
+    /// Adds a series to the plot.
+    /// </summary>
+    /// <param name="series">The series object to add.</param>
+    /// <exception cref="ArgumentNullException">Thrown when series is null.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when X or Y axis is not set.</exception>
+    public void AddSeries(ISeries series)
+    {
+        if (series == null)
+            throw new ArgumentNullException(nameof(series), "Series cannot be null.");
+        if (XAxis == null || YAxis == null)
+            throw new InvalidOperationException("Both X and Y axes must be set before adding a series.");
+        _series.Add(series);
+    }
+
+    /// <summary>
     /// Adds a LineSeries to the plot.
     /// </summary>
     /// <param name="title">Series title (for legend, etc.).</param>
@@ -91,19 +107,6 @@ public class Plot(Options.PlotOptions options)
     }
 
     /// <summary>
-    /// Adds an existing LineSeries object to the plot.
-    /// </summary>
-    /// <param name="series">The series object to add.</param>
-    public void AddLineSeries(LineSeries series)
-    {
-        if (series == null)
-            throw new ArgumentNullException(nameof(series), "Series cannot be null.");
-        if (XAxis == null || YAxis == null)
-            throw new InvalidOperationException("Both X and Y axes must be set before adding a series.");
-        _series.Add(series);
-    }
-
-    /// <summary>
     /// Adds a ScatterSeries to the plot.
     /// </summary>
     /// <param name="title">Series title.</param>
@@ -114,16 +117,41 @@ public class Plot(Options.PlotOptions options)
         if (XAxis == null || YAxis == null)
             throw new InvalidOperationException("Both X and Y axes must be set before adding a series.");
 
+        if (dataPoints == null || dataPoints.Count == 0)
+            throw new ArgumentException("Data points cannot be null or empty.", nameof(dataPoints));
+
         var series = new ScatterSeries(title, dataPoints, plotStyle);
         _series.Add(series);
     }
 
-    public void AddScatterSeries(ScatterSeries series)
-    {
-        if (series == null)
-            throw new ArgumentNullException(nameof(series), "Series cannot be null.");
+    /// <summary>
+    /// Adds a HistogramSeries to the plot.
+    /// </summary>
+    /// <param name="title">Series title.</param>
+    /// <param name="data">The list of data points.</param>
+    /// <param name="binningMode">Binning mode for the histogram.</param>
+    /// <param name="autoRule">Automatic binning rule.</param>
+    /// <param name="manualBinCount">Manual bin count (if applicable).</param>
+    /// <param name="manualBinWidth">Manual bin width (if applicable).</param>
+    /// <param name="plotStyle">Styling for the histogram.</param>
+    public void AddHistogramSeries(
+        string title,
+        List<double> data,
+        HistogramStyle plotStyle,
+        HistogramBinningMode binningMode = HistogramBinningMode.Automatic,
+        AutomaticBinningRule autoRule = AutomaticBinningRule.FreedmanDiaconis,
+        int? manualBinCount = null,
+        double? manualBinWidth = null
+    ) {
         if (XAxis == null || YAxis == null)
             throw new InvalidOperationException("Both X and Y axes must be set before adding a series.");
+
+        if (data == null || data.Count == 0)
+            throw new ArgumentException("Data points cannot be null or empty.", nameof(data));
+
+        var series = new HistogramSeries(
+            title, data, binningMode, autoRule, manualBinCount, manualBinWidth, plotStyle
+        );
         _series.Add(series);
     }
 
@@ -169,11 +197,18 @@ public class Plot(Options.PlotOptions options)
 
     private void PrepareAxes(PlotArea plotArea)
     {
-        if (XAxis!.AutoScale)
-            XAxis.CalculateRange(_series, AxisType.X);
-        if (YAxis!.AutoScale)
-            YAxis.CalculateRange(_series, AxisType.Y);
+        if (XAxis == null || YAxis == null) return;
 
+        foreach (var s in _series)
+        {
+            s.PrepareData();
+        }
+
+        if (XAxis.AutoScale)
+            XAxis.CalculateRange(_series, AxisType.X);
+        if (YAxis.AutoScale)
+            YAxis.CalculateRange(_series, AxisType.Y); 
+        
         XAxis.CalculateTicks(plotArea.Width);
         YAxis.CalculateTicks(plotArea.Height);
     }
