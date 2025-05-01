@@ -26,9 +26,9 @@ internal class Axis(
     /// Calculates the range of the axis based on the provided series data.
     /// </summary>
     /// <param name="series">The series data to calculate the range from.</param>
-    /// <param name="axis_type">The type of axis (X or Y).</param>
+    /// <param name="axisType">The type of axis (X or Y).</param>
     /// <remarks>
-    internal void CalculateRange(IEnumerable<ISeries> series, AxisType axis_type)
+    internal void CalculateRange(IEnumerable<ISeries> series, AxisType axisType)
     {
         if (!AutoScale)
             return;
@@ -38,7 +38,7 @@ internal class Axis(
             // Set a default range if no series data provided for autoscaling
             SetRange(0, 1);
             Console.Error.WriteLine(
-                $"Warning: AutoScale enabled for {axis_type}-Axis but no series data provided. Defaulting range to [0, 1]."
+                $"Warning: AutoScale enabled for {axisType}-Axis but no series data provided. Defaulting range to [0, 1]."
             );
             return;
         }
@@ -48,16 +48,13 @@ internal class Axis(
 
         foreach (var s in series)
         {
-            var (minX, maxX, minY, maxY) = s.GetDataRange();
-            if (axis_type == AxisType.X)
+            (double sMin, double sMax) = s.GetAxisBounds(axisType);
+
+            // Check if valid bounds were returned
+            if (!double.IsNaN(sMin) && !double.IsNaN(sMax))
             {
-                min = Math.Min(min, minX);
-                max = Math.Max(max, maxX);
-            }
-            else
-            {
-                min = Math.Min(min, minY);
-                max = Math.Max(max, maxY);
+                min = Math.Min(min, sMin);
+                max = Math.Max(max, sMax);
             }
         }
 
@@ -66,25 +63,37 @@ internal class Axis(
         {
             SetRange(0, 1);
             Console.Error.WriteLine(
-                $"Warning: AutoScale enabled for {axis_type}-Axis but no valid data points found in series. "
+                $"Warning: AutoScale enabled for {axisType}-Axis but no valid data points found in series. "
                 + "Defaulting range to [0, 1]."
             );
             return;
         }
 
-        // Add some padding to the range (e.g., 5%)
-        double padding = (max - min) * 0.05;
-        // Handle zero range case before padding
-        if (padding < Constants.Epsilon) {
-            padding = 1.0; // Default padding if range is zero
-            min -= padding * 0.5;
-            max += padding * 0.5;
-        } else {
-            min -= padding;
-            max += padding;
+        // Special case for Y-axis with histogram series: ensure min is at least 0
+        if (axisType == AxisType.Y && Enumerable.Any(series, s => s is HistogramSeries))
+        {
+            min = Math.Min(min, 0);
         }
 
-        SetRange(min, max);
+        // Add padding (only if range is not zero)
+        double range = max - min;
+        double padding = 0;
+        if (range > Constants.Epsilon) {
+            padding = range * 0.05; // 5% padding
+        } else {
+            padding = (Math.Abs(min) > Constants.Epsilon) ? Math.Abs(min) * 0.1 : 0.5; // 10% of value or 0.5 default
+        }
+
+        double finalMin = min - padding;
+        double finalMax = max + padding;
+
+        // Ensure Y-axis doesn't go unnecessarily below zero after padding if forced
+        if (axisType == AxisType.Y && finalMin < 0 && min >= 0)
+        {
+            finalMin = 0;
+        }
+
+        SetRange(finalMin, finalMax);
 
         TickPositions.Clear();
         TickLabels.Clear();
