@@ -2,7 +2,7 @@
 using SharpSvgPlotter.AxisLabeling;
 using SharpSvgPlotter.PlotOptions;
 using SharpSvgPlotter.Primitives;
-using SharpSvgPlotter.Primitives.PlotStyles;
+using SharpSvgPlotter.Styles;
 
 static void SineWavePlot()
 {   
@@ -73,6 +73,47 @@ static void SineWavePlot()
     Console.WriteLine("Sine wave plot generated!");
 }
 
+static void Histogram() 
+{
+    var data = new List<double> { 1, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5 };
+    var titleOptions = new TitleOptions
+    {
+        Title = "Histogram Example",
+        FontSize = 16,
+        Color = "black",
+        FontFamily = "Arial"
+    };
+
+    var legendOptions = new LegendOptions
+    {
+        ShowLegend = true,
+    };
+
+    var plot = new Plot(new PlotOptions
+    {
+        Width = 800,
+        Height = 600,
+        BackgroundColor = "#FFFFFF",
+        LabelingAlgorithm = AxisLabelingAlgorithmType.Matplotlib,
+        TitleOptions = titleOptions,
+        LegendOptions = legendOptions,
+    });
+    plot.SetXAxis("Value");
+    plot.SetYAxis("Frequency");
+    
+    plot.AddHistogramSeries("Data", data, new HistogramStyle
+    {
+        FillColor = "blue",
+        FillOpacity = 0.5,
+        StrokeColor = "black",
+        StrokeWidth = 1,
+        StrokeOpacity = 0.8,
+    });
+
+    plot.Save("histogram.svg");
+    Console.WriteLine("Histogram saved as histogram.svg");
+}
+
 static void IrisScatterPlot()
 {
     string filePath = "Data/Iris.csv";
@@ -136,4 +177,5 @@ static void IrisScatterPlot()
 }
 
 SineWavePlot();
+Histogram();
 IrisScatterPlot();
