@@ -70,7 +70,7 @@ internal class Axis(
         }
 
         // Special case for Y-axis with histogram series: ensure min is at least 0
-        if (axisType == AxisType.Y && Enumerable.Any(series, s => s is HistogramSeries))
+        if (axisType == AxisType.Y && series.Any(s => s is HistogramSeries))
         {
             min = Math.Min(min, 0);
         }
