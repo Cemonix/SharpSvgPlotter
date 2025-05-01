@@ -4,23 +4,25 @@ using SharpSvgPlotter.Primitives;
 using SharpSvgPlotter.Primitives.PlotStyles;
 using SharpSvgPlotter.Renderer;
 using SharpSvgPlotter.Series;
+using Options = SharpSvgPlotter.PlotOptions;
 
 namespace SharpSvgPlotter;
 
-public class Plot(PlotOptions options)
+public class Plot(Options.PlotOptions options)
 {
     private readonly List<ISeries> _series = [];
 
-    public double Width { get; init; } = options.Width;
-    public double Height { get; init; } = options.Height;
-    public PlotMargins Margins { get; init; } = options.Margins;
-    public string Title { get; init; } = options.Title;
-    public string BackgroundColor { get; init; } = options.BackgroundColor;
-    public int AxisLabelFontSize { get; init; } = options.AxisLabelFontSize;
-    public int AxisLabelTickCount { get; init; } = options.AxisLabelTickCount;
-    public string AxisLabelFormatString { get; init; } = options.AxisLabelFormatString;
-    public AxisLabelingAlgorithmType? LabelingAlgorithm { get; init; } = options.LabelingAlgorithm;
+    public Options.PlotOptions Options { get; init; } = options ?? throw new ArgumentNullException(nameof(options));
+
+    public double Width => Options.Width;
+    public double Height => Options.Height;
+    public PlotMargins Margins => Options.Margins;
+    public string Title => Options.TitleOptions.Title;
+    public string BackgroundColor => Options.BackgroundColor;
+
     public IReadOnlyList<ISeries> Series => _series.AsReadOnly();
+
+
     internal Axis? XAxis { get; private set; }
     internal Axis? YAxis { get; private set; }
 
@@ -30,17 +32,19 @@ public class Plot(PlotOptions options)
     /// <param name="label">Label text for the axis.</param>
     /// <param name="autoScale">Whether the axis range should be calculated automatically (default true).</param>
     public void SetXAxis(string label, bool autoScale = true) {
-        if (LabelingAlgorithm == null)
+        if (Options.LabelingAlgorithm == null)
             throw new InvalidOperationException("Labeling algorithm must be set before configuring axes.");
         
+        var axisLabelingOpts = new AxisLabelingOptions() {
+            FontSize = Options.XAxisOptions.TickLabelFontSize,
+            TickCount = Options.XAxisOptions.TickCountHint,
+            FormatString = Options.XAxisOptions.TickFormatString
+        };
+
         XAxis = new Axis(
             label,
-            GetLabelingAlgorithm(LabelingAlgorithm),
-            new AxisLabelingOptions() {
-                FontSize = AxisLabelFontSize,
-                TickCount = AxisLabelTickCount,
-                FormatString = AxisLabelFormatString
-            },
+            GetLabelingAlgorithm(Options.LabelingAlgorithm),
+            axisLabelingOpts,
             autoScale
         );
     }
@@ -51,17 +55,19 @@ public class Plot(PlotOptions options)
     /// <param name="label">Label text for the axis.</param>
     /// <param name="autoScale">Whether the axis range should be calculated automatically (default true).</param>
     public void SetYAxis(string label, bool autoScale = true) {
-        if (LabelingAlgorithm == null)
+        if (Options.LabelingAlgorithm == null)
             throw new InvalidOperationException("Labeling algorithm must be set before configuring axes.");
+
+        var axisLabelingOpts = new AxisLabelingOptions() {
+            FontSize = Options.YAxisOptions.TickLabelFontSize,
+            TickCount = Options.YAxisOptions.TickCountHint,
+            FormatString = Options.YAxisOptions.TickFormatString
+        };
 
         YAxis = new Axis(
             label,
-            GetLabelingAlgorithm(LabelingAlgorithm),
-            new AxisLabelingOptions() {
-                FontSize = AxisLabelFontSize,
-                TickCount = AxisLabelTickCount,
-                FormatString = AxisLabelFormatString
-            },
+            GetLabelingAlgorithm(Options.LabelingAlgorithm),
+            axisLabelingOpts,
             autoScale
         );
     }
@@ -146,7 +152,6 @@ public class Plot(PlotOptions options)
 
         // 5. Save File
         File.WriteAllText(filePath, svgContent);
-        Console.WriteLine($"Plot saved successfully to {filePath}");
     }
 
     private static AxisLabelingAlgorithm GetLabelingAlgorithm(AxisLabelingAlgorithmType? algorithmType)
