@@ -1,6 +1,6 @@
 # SharpSvgPlotter
 
-A .NET library for creating basic SVG plots (line, scatter) directly from your C# applications.
+A .NET library for creating basic SVG plots (line, scatter and histograms) directly from your C# applications.
 
 ## Features
 
@@ -8,6 +8,7 @@ A .NET library for creating basic SVG plots (line, scatter) directly from your C
 * **Plot Types:**
     * Line plots (`LineSeries`)
     * Scatter plots (`ScatterSeries`)
+    * Histograms (`HistogramSeries`)
 * **Customization:**
     * **General Plot:** Width, height, margins, background color.
     * **Title:** Add a plot title with customizable text, font size, color, and family. Hide title by leaving the text empty.
@@ -108,9 +109,7 @@ customPlot.Save("custom_plot.svg");
 ```
 
 ## Future Plans
-- Histogram plots
 - Bar plots
-- Error bars
 - More legend positioning options (e.g., "Best")
 - More marker types for scatter plots
 - Improved text measurement for precise layout
